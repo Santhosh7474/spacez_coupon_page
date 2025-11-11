@@ -55,7 +55,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
       } else if (_appliedCouponCode != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Coupon '${_appliedCouponCode}' is currently active. Remove it first!"),
+            content: Text("Coupon '${_appliedCouponCode}' is applied. Remove it first!"),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 3),
           ),
