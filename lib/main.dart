@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -8,9 +10,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark.copyWith(
+      statusBarColor: Colors.white,
+      statusBarIconBrightness: Brightness.dark,
+    ));
+
     return MaterialApp(
       title: 'Coupons UI',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+      ),
       debugShowCheckedModeBanner: false,
       home: const CouponsScreen(),
     );
@@ -28,26 +38,36 @@ class _CouponsScreenState extends State<CouponsScreen> {
   final double _originalPrice = 19500.00;
   final double _couponAmount = 6900.00;
   double _currentPrice = 19500.00;
-  bool _couponApplied = false;
+  String? _appliedCouponCode;
 
-  void _applyCoupon() {
+  void _applyCoupon(String couponCode) {
     setState(() {
-      if (!_couponApplied) {
-        _currentPrice = _originalPrice - _couponAmount;
-        _couponApplied = true;
+      if (_appliedCouponCode == couponCode) {
+        _currentPrice = _originalPrice;
+        _appliedCouponCode = null;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Success! ₹6900 discount applied."),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text("Coupon '$couponCode' removed."),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (_appliedCouponCode != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Coupon '${_appliedCouponCode}' is currently active. Remove it first!"),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
           ),
         );
       } else {
+        _currentPrice = _originalPrice - _couponAmount;
+        _appliedCouponCode = couponCode;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Coupon already applied."),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text("Success! Coupon '$couponCode' applied. (-₹${_couponAmount.toStringAsFixed(0)})"),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -55,15 +75,13 @@ class _CouponsScreenState extends State<CouponsScreen> {
   }
 
   void _reserveBooking() {
-    setState(() {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Bokking confirmed"),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Booking confirmed"),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -85,13 +103,15 @@ class _CouponsScreenState extends State<CouponsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildCouponCard(
-                          onApply: _applyCoupon,
-                          isApplied: _couponApplied,
+                          code: 'LONGSTAY_A',
+                          onApply: () => _applyCoupon('LONGSTAY_A'),
+                          isApplied: _appliedCouponCode == 'LONGSTAY_A',
                         ),
                         const SizedBox(height: 16),
                         _buildCouponCard(
-                          onApply: _applyCoupon,
-                          isApplied: _couponApplied,
+                          code: 'LONGSTAY_B',
+                          onApply: () => _applyCoupon('LONGSTAY_B'),
+                          isApplied: _appliedCouponCode == 'LONGSTAY_B',
                         ),
                         const SizedBox(height: 24),
                         const Text(
@@ -104,8 +124,9 @@ class _CouponsScreenState extends State<CouponsScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildCouponCard(
-                          onApply: _applyCoupon,
-                          isApplied: _couponApplied,
+                          code: 'LONGSTAY_C',
+                          onApply: () => _applyCoupon('LONGSTAY_C'),
+                          isApplied: _appliedCouponCode == 'LONGSTAY_C',
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -141,7 +162,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text("Menu accesed"),
+                  content: Text("Menu accessed"),
                   backgroundColor: Colors.green,
                   duration: Duration(seconds: 2),
                 ),
@@ -182,13 +203,24 @@ class _CouponsScreenState extends State<CouponsScreen> {
   }
 
   Widget _buildCouponCard({
+    required String code,
     required VoidCallback onApply,
     required bool isApplied,
   }) {
     const Color couponColor = Color(0xFFC6723B);
+    
+    bool isAnotherActive = _appliedCouponCode != null && !isApplied;
+    
+    String buttonText = isApplied ? "Applied" : (isAnotherActive ? "Apply" : "Apply");
+    Color buttonColor = isApplied ? Colors.green : (isAnotherActive ? Colors.grey : couponColor);
+    IconData buttonIcon = isApplied ? Icons.verified : (isAnotherActive ? Icons.lock_outline : Icons.local_offer_outlined);
+    
+    VoidCallback? onPressed = isAnotherActive ? null : onApply;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(8.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -203,7 +235,10 @@ class _CouponsScreenState extends State<CouponsScreen> {
           children: [
             Container(
               width: 90,
-              color: couponColor,
+              decoration: BoxDecoration(
+                 color: couponColor,
+                 borderRadius: const BorderRadius.only(topLeft: Radius.circular(8.0), bottomLeft: Radius.circular(8.0)),
+              ),
               child: Center(
                 child: Stack(
                   alignment: Alignment.centerRight,
@@ -230,12 +265,11 @@ class _CouponsScreenState extends State<CouponsScreen> {
                     Center(
                       child: RotatedBox(
                         quarterTurns: 3,
-                        child: Text(
+                        child: const Text(
                           "₹6,900",
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-
                             fontSize: 22,
                             letterSpacing: 1.5,
                           ),
@@ -255,26 +289,22 @@ class _CouponsScreenState extends State<CouponsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "LONGSTAY",
-                          style: TextStyle(
+                        Text(
+                          code,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                         ),
                         TextButton.icon(
-                          onPressed: onApply,
+                          onPressed: onPressed,
                           icon: Icon(
-                            isApplied
-                                ? Icons.check_circle_outline
-                                : Icons.local_offer_outlined,
+                            buttonIcon,
                             size: 16,
                           ),
-                          label: Text(isApplied ? "Applied" : "Apply"),
+                          label: Text(buttonText),
                           style: TextButton.styleFrom(
-                            foregroundColor: isApplied
-                                ? Colors.green
-                                : couponColor,
+                            foregroundColor: buttonColor,
                           ),
                         ),
                       ],
@@ -332,7 +362,6 @@ class _CouponsScreenState extends State<CouponsScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildGreenBanner(),
-
         Container(
           padding: EdgeInsets.fromLTRB(
             16.0,
@@ -405,9 +434,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
                 ],
               ),
               ElevatedButton(
-                onPressed: () {
-                  _reserveBooking();
-                },
+                onPressed: _reserveBooking,
                 child: const Text("Reserve"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFC6723B),
