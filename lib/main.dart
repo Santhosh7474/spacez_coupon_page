@@ -83,6 +83,16 @@ class _CouponsScreenState extends State<CouponsScreen> {
       ),
     );
   }
+  
+  void _readMore() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Clicked Read More"),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -217,18 +227,8 @@ class _CouponsScreenState extends State<CouponsScreen> {
     
     VoidCallback? onPressed = isAnotherActive ? null : onApply;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return ClipRRect(
+      borderRadius: BorderRadiusGeometry.circular(16),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -317,14 +317,14 @@ class _CouponsScreenState extends State<CouponsScreen> {
                     const SizedBox(height: 12),
                     const Divider(height: 1, color: Color(0xFFEEEEEE)),
                     const SizedBox(height: 8),
-                    const Text(
+                    TextButton(onPressed: _readMore, child: Text(
                       "Read more",
                       style: TextStyle(
                         color: Colors.black54,
                         decoration: TextDecoration.underline,
                         fontSize: 13,
                       ),
-                    ),
+                    ),)
                   ],
                 ),
               ),
